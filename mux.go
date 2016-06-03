@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"path"
 	"regexp"
+	"sort"
 
 	"github.com/gorilla/context"
 )
@@ -303,6 +304,17 @@ func (r *Router) walk(walkFn WalkFunc, ancestors []*Route) error {
 		}
 	}
 	return nil
+}
+
+type routes []*Route
+
+func (r routes) Len() int           { return len(r) }
+func (r routes) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
+func (r routes) Less(i, j int) bool { return r[i].GetPriority() > r[j].GetPriority() }
+
+// SortRoutes sort routes by route priority
+func (r *Router) SortRoutes() {
+	sort.Sort(routes(r.routes))
 }
 
 // ----------------------------------------------------------------------------
