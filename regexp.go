@@ -111,7 +111,7 @@ func newRouteRegexp(tpl string, matchHost, matchPrefix, matchQuery, strictSlash,
 		reverse.WriteByte('/')
 	}
 	// Compile full regexp.
-	reg, errCompile := regexp.Compile(pattern.String())
+	reg, errCompile := regexp.Compile(tpl)
 	if errCompile != nil {
 		return nil, errCompile
 	}
