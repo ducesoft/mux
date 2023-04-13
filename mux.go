@@ -12,6 +12,7 @@ import (
 	"path"
 	"regexp"
 	"sort"
+	"strings"
 )
 
 var (
@@ -28,17 +29,17 @@ func NewRouter() *Router {
 // It implements the http.Handler interface, so it can be registered to serve
 // requests:
 //
-//     var router = mux.NewRouter()
+//	var router = mux.NewRouter()
 //
-//     func main() {
-//         http.Handle("/", router)
-//     }
+//	func main() {
+//	    http.Handle("/", router)
+//	}
 //
 // Or, for Google App Engine, register it in a init() function:
 //
-//     func init() {
-//         http.Handle("/", router)
-//     }
+//	func init() {
+//	    http.Handle("/", router)
+//	}
 //
 // This will send all incoming requests to the router.
 type Router struct {
@@ -521,10 +522,7 @@ func matchInArray(arr []string, value string) bool {
 func matchMapWithString(toCheck map[string]string, toMatch map[string][]string, canonicalKey bool) bool {
 	for k, v := range toCheck {
 		// Check if key exists.
-		if canonicalKey {
-			k = http.CanonicalHeaderKey(k)
-		}
-		if values := toMatch[k]; values == nil {
+		if values := matchMapValuesInsensitive(k, toMatch, canonicalKey); values == nil {
 			return false
 		} else if v != "" {
 			// If value was defined as an empty string we only check that the
@@ -549,10 +547,7 @@ func matchMapWithString(toCheck map[string]string, toMatch map[string][]string, 
 func matchMapWithRegex(toCheck map[string]*regexp.Regexp, toMatch map[string][]string, canonicalKey bool) bool {
 	for k, v := range toCheck {
 		// Check if key exists.
-		if canonicalKey {
-			k = http.CanonicalHeaderKey(k)
-		}
-		if values := toMatch[k]; values == nil {
+		if values := matchMapValuesInsensitive(k, toMatch, canonicalKey); values == nil {
 			return false
 		} else if v != nil {
 			// If value was defined as an empty string we only check that the
@@ -570,6 +565,29 @@ func matchMapWithRegex(toCheck map[string]*regexp.Regexp, toMatch map[string][]s
 		}
 	}
 	return true
+}
+
+func matchMapValuesInsensitive(k string, toMatch map[string][]string, canonicalKey bool) []string {
+	if canonicalKey {
+		if vs := toMatch[http.CanonicalHeaderKey(k)]; nil != vs {
+			return vs
+		}
+	}
+	if vs := toMatch[k]; nil != vs {
+		return vs
+	}
+	if vs := toMatch[strings.ToLower(k)]; nil != vs {
+		return vs
+	}
+	for name, vs := range toMatch {
+		if name == k {
+			return vs
+		}
+		if strings.ToLower(name) == strings.ToLower(k) {
+			return vs
+		}
+	}
+	return nil
 }
 
 // methodNotAllowed replies to the request with an HTTP status code 405.
